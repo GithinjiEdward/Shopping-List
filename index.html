@@ -3,27 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Analytics</title>
+    <title>Shopping Analytics Pro</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-container">
-        
         <div id="tab-shopping" class="tab-content active">
-            <h1>New Shopping Trip</h1>
-            <section class="input-section">
-                <input type="text" id="itemName" placeholder="Item name...">
-                <input type="number" id="itemPrice" placeholder="Price ($)">
+            <h1>Shopping List</h1>
+            
+            <section class="date-selection">
                 <div class="date-row">
-                    <label>Date:</label>
+                    <label>Shopping Date:</label>
                     <input type="date" id="shoppingDate">
                 </div>
-                <button class="add-btn" onclick="addItem()">Add to List</button>
             </section>
 
-            <section class="current-list-section">
-                <ul id="activeList"></ul>
+            <section class="table-section">
+                <table id="inputTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Item Name</th>
+                            <th style="width: 15%;">Qty</th>
+                            <th style="width: 20%;">Price</th>
+                            <th style="width: 25%;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
                 <button class="checkout-btn" onclick="checkout()">Finish & Save Trip</button>
             </section>
         </div>
@@ -37,7 +45,6 @@
             <div class="chart-container">
                 <canvas id="spendingChart"></canvas>
             </div>
-
             <div class="history-controls">
                 <select id="monthFilter" onchange="displayHistory()">
                     <option value="2026-01">January 2026</option>

@@ -142,7 +142,7 @@ function updateDashboard(trips) {
         options: { responsive: true, plugins: { legend: { display: false } } }
     });
 }
-
+/*jhjj*/
 function reAdd(name, price) {
     showTab('tab-shopping');
     const rows = document.querySelectorAll('#tableBody tr');

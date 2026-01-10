@@ -1,5 +1,6 @@
 let shoppingHistory = JSON.parse(localStorage.getItem('shoppingHistory')) || [];
 let myChart = null;
+let preparedItems = [];
 
 window.onload = function() {
     document.getElementById('shoppingDate').value = new Date().toISOString().split('T')[0];
@@ -13,6 +14,7 @@ function showTab(tabId) {
     if(tabId === 'tab-history') displayHistory();
 }
 
+// --- STEP 1: DRAFTING LOGIC ---
 function initializeTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = ''; 
@@ -35,53 +37,75 @@ function calculateRowTotal(input) {
     const row = input.closest('tr');
     const qty = row.querySelector('.item-qty').value || 0;
     const price = row.querySelector('.item-price').value || 0;
-    const total = (parseFloat(qty) * parseFloat(price)).toFixed(2);
-    row.querySelector('.total-cell').innerText = `$${total}`;
+    row.querySelector('.total-cell').innerText = `$${(qty * price).toFixed(2)}`;
 }
 
 function checkLastRow(input) {
     const rows = document.querySelectorAll('#tableBody tr');
-    if (input.closest('tr') === rows[rows.length - 1] && input.value !== '') {
-        addRow();
-    }
+    if (input.closest('tr') === rows[rows.length - 1] && input.value !== '') addRow();
 }
 
-function checkout() {
+// --- STEP 2: CHECKLIST LOGIC ---
+function goToChecklist() {
+    preparedItems = [];
     const rows = document.querySelectorAll('#tableBody tr');
-    let items = [], grandTotal = 0;
-
+    
     rows.forEach(row => {
         const name = row.querySelector('.item-name').value;
         const qty = parseFloat(row.querySelector('.item-qty').value);
         const price = parseFloat(row.querySelector('.item-price').value);
         if (name && qty && price) {
-            items.push({ name, qty, price, total: qty * price });
-            grandTotal += qty * price;
+            preparedItems.push({ name, qty, price, total: qty * price });
         }
     });
 
-    if (items.length === 0) return alert("Please add items!");
-    
-    shoppingHistory.push({ date: document.getElementById('shoppingDate').value, items, total: grandTotal });
+    if (preparedItems.length === 0) return alert("Please add items to your list first!");
+
+    const checklistBody = document.getElementById('checklistBody');
+    checklistBody.innerHTML = preparedItems.map((item, index) => `
+        <tr>
+            <td id="name-${index}">${item.name} (x${item.qty})</td>
+            <td>$${item.total.toFixed(2)}</td>
+            <td style="text-align:center;">
+                <input type="checkbox" onchange="toggleStrike(${index}, this)">
+            </td>
+        </tr>
+    `).join('');
+
+    showTab('tab-checklist');
+}
+
+function toggleStrike(index, checkbox) {
+    const nameCell = document.getElementById(`name-${index}`);
+    if (checkbox.checked) nameCell.classList.add('strikethrough');
+    else nameCell.classList.remove('strikethrough');
+}
+
+// --- STEP 3: FINAL SAVE ---
+function finalSave() {
+    const checkboxes = document.querySelectorAll('#checklistBody input[type="checkbox"]');
+    const finalPurchasedItems = preparedItems.filter((item, index) => checkboxes[index].checked);
+
+    if (finalPurchasedItems.length === 0) {
+        if (!confirm("No items are checked. Save an empty trip?")) return;
+    }
+
+    const total = finalPurchasedItems.reduce((sum, item) => sum + item.total, 0);
+    const date = document.getElementById('shoppingDate').value;
+
+    shoppingHistory.push({ date, items: finalPurchasedItems, total });
     localStorage.setItem('shoppingHistory', JSON.stringify(shoppingHistory));
-    
+
+    alert("Purchase saved successfully!");
     initializeTable();
     showTab('tab-history');
 }
 
+// --- RE-ADD & DASHBOARD LOGIC (Same as previous) ---
 function reAdd(name, price) {
     showTab('tab-shopping');
     const rows = document.querySelectorAll('#tableBody tr');
-    let targetRow = null;
-
-    // Find first empty row
-    for (let row of rows) {
-        if (!row.querySelector('.item-name').value) {
-            targetRow = row;
-            break;
-        }
-    }
-
+    let targetRow = Array.from(rows).find(r => !r.querySelector('.item-name').value);
     if (targetRow) {
         targetRow.querySelector('.item-name').value = name;
         targetRow.querySelector('.item-price').value = price;
@@ -94,22 +118,16 @@ function displayHistory() {
     const filter = document.getElementById('monthFilter').value;
     const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
     updateDashboard(filtered);
-    
     const display = document.getElementById('historyDisplay');
-    if (filtered.length === 0) { display.innerHTML = "<p>No data.</p>"; return; }
-
-    display.innerHTML = filtered.map(trip => `
+    display.innerHTML = filtered.length ? filtered.map(trip => `
         <div class="history-item">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
                 <span>${trip.date}</span><span>$${trip.total.toFixed(2)}</span>
             </div>
-            ${trip.items.map(i => `
-                <div style="display:flex; justify-content:space-between; font-size:13px; color:#555; margin-bottom:4px;">
-                    <span>${i.name} (x${i.qty})</span>
-                    <button class="copy-btn" onclick="reAdd('${i.name}', ${i.price})">Add Again</button>
-                </div>`).join('')}
-        </div>
-    `).join('');
+            ${trip.items.map(i => `<div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px;">
+                <span>${i.name}</span> <button class="copy-btn" onclick="reAdd('${i.name}', ${i.price})">Add</button>
+            </div>`).join('')}
+        </div>`).join('') : "<p>No history.</p>";
 }
 
 function updateDashboard(trips) {
@@ -122,12 +140,10 @@ function updateDashboard(trips) {
     document.getElementById('totalSpent').innerText = `$${total.toFixed(2)}`;
     const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
     document.getElementById('topProduct').innerText = top;
-    
     const ctx = document.getElementById('spendingChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: Object.keys(daily).sort(), datasets: [{ label: 'Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        data: { labels: Object.keys(daily).sort(), datasets: [{ label: 'Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] }
     });
 }

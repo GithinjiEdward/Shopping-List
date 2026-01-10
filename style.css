@@ -3,6 +3,7 @@
     --secondary: #007bff;
     --dark: #333;
     --bg: #f8f9fa;
+    --eddie: red;
 }
 
 body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 10px; }

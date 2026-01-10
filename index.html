@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Shopping Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Shopping Tracker</h1>
+            <div class="dashboard" id="dashboardSummary">
+                <div class="stat-card">
+                    <h3>Monthly Spend</h3>
+                    <p id="totalSpent">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Top Item</h3>
+                    <p id="topProduct">None</p>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="spendingChart"></canvas>
+            </div>
+        </header>
+
+        <section class="input-section">
+            <h2>Add New Item</h2>
+            <input type="text" id="itemName" placeholder="Item name (e.g. Milk)">
+            <input type="number" id="itemPrice" placeholder="Price ($)">
+            <div class="date-row">
+                <label for="shoppingDate">Date:</label>
+                <input type="date" id="shoppingDate">
+            </div>
+            <button class="add-btn" onclick="addItem()">Add to List</button>
+        </section>
+
+        <section class="current-list-section">
+            <h2>Current Trip</h2>
+            <ul id="activeList"></ul>
+            <button class="checkout-btn" onclick="checkout()">Finish & Save Trip</button>
+        </section>
+
+        <hr>
+
+        <section class="history-section">
+            <h2>History & Backlog</h2>
+            <select id="monthFilter" onchange="displayHistory()">
+                <option value="2026-01">January 2026</option>
+                <option value="2025-12">December 2025</option>
+                <option value="2025-11">November 2025</option>
+            </select>
+            <div id="historyDisplay"></div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

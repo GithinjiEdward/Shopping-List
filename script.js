@@ -14,7 +14,7 @@ function showTab(tabId) {
     if(tabId === 'tab-history') displayHistory();
 }
 
-// --- STEP 1: DRAFTING LOGIC ---
+// --- DRAFTING TABLE LOGIC ---
 function initializeTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = ''; 
@@ -45,7 +45,7 @@ function checkLastRow(input) {
     if (input.closest('tr') === rows[rows.length - 1] && input.value !== '') addRow();
 }
 
-// --- STEP 2: CHECKLIST LOGIC ---
+// --- CHECKLIST TRANSITION ---
 function goToChecklist() {
     preparedItems = [];
     const rows = document.querySelectorAll('#tableBody tr');
@@ -77,17 +77,16 @@ function goToChecklist() {
 
 function toggleStrike(index, checkbox) {
     const nameCell = document.getElementById(`name-${index}`);
-    if (checkbox.checked) nameCell.classList.add('strikethrough');
-    else nameCell.classList.remove('strikethrough');
+    checkbox.checked ? nameCell.classList.add('strikethrough') : nameCell.classList.remove('strikethrough');
 }
 
-// --- STEP 3: FINAL SAVE ---
+// --- FINAL DATA SAVE ---
 function finalSave() {
     const checkboxes = document.querySelectorAll('#checklistBody input[type="checkbox"]');
     const finalPurchasedItems = preparedItems.filter((item, index) => checkboxes[index].checked);
 
     if (finalPurchasedItems.length === 0) {
-        if (!confirm("No items are checked. Save an empty trip?")) return;
+        if (!confirm("No items checked. Save empty trip?")) return;
     }
 
     const total = finalPurchasedItems.reduce((sum, item) => sum + item.total, 0);
@@ -96,38 +95,29 @@ function finalSave() {
     shoppingHistory.push({ date, items: finalPurchasedItems, total });
     localStorage.setItem('shoppingHistory', JSON.stringify(shoppingHistory));
 
-    alert("Purchase saved successfully!");
+    alert("Purchase saved! Check your history.");
     initializeTable();
     showTab('tab-history');
 }
 
-// --- RE-ADD & DASHBOARD LOGIC (Same as previous) ---
-function reAdd(name, price) {
-    showTab('tab-shopping');
-    const rows = document.querySelectorAll('#tableBody tr');
-    let targetRow = Array.from(rows).find(r => !r.querySelector('.item-name').value);
-    if (targetRow) {
-        targetRow.querySelector('.item-name').value = name;
-        targetRow.querySelector('.item-price').value = price;
-        calculateRowTotal(targetRow.querySelector('.item-price'));
-        checkLastRow(targetRow.querySelector('.item-name'));
-    }
-}
-
+// --- HISTORY & ANALYTICS ---
 function displayHistory() {
     const filter = document.getElementById('monthFilter').value;
     const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
     updateDashboard(filtered);
+    
     const display = document.getElementById('historyDisplay');
     display.innerHTML = filtered.length ? filtered.map(trip => `
         <div class="history-item">
-            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; border-bottom:1px solid #eee; padding-bottom:5px;">
                 <span>${trip.date}</span><span>$${trip.total.toFixed(2)}</span>
             </div>
-            ${trip.items.map(i => `<div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px;">
-                <span>${i.name}</span> <button class="copy-btn" onclick="reAdd('${i.name}', ${i.price})">Add</button>
-            </div>`).join('')}
-        </div>`).join('') : "<p>No history.</p>";
+            ${trip.items.map(i => `
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:8px;">
+                    <span>${i.name} (x${i.qty})</span>
+                    <button class="copy-btn" style="font-size:10px; background:#eef; border:none; border-radius:4px; padding:2px 6px;" onclick="reAdd('${i.name}', ${i.price})">Add Again</button>
+                </div>`).join('')}
+        </div>`).join('') : "<p style='text-align:center; margin-top:20px;'>No history found.</p>";
 }
 
 function updateDashboard(trips) {
@@ -140,10 +130,27 @@ function updateDashboard(trips) {
     document.getElementById('totalSpent').innerText = `$${total.toFixed(2)}`;
     const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
     document.getElementById('topProduct').innerText = top;
+
     const ctx = document.getElementById('spendingChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: Object.keys(daily).sort(), datasets: [{ label: 'Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] }
+        data: { 
+            labels: Object.keys(daily).sort(), 
+            datasets: [{ label: 'Daily Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] 
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
     });
+}
+
+function reAdd(name, price) {
+    showTab('tab-shopping');
+    const rows = document.querySelectorAll('#tableBody tr');
+    let targetRow = Array.from(rows).find(r => !r.querySelector('.item-name').value);
+    if (targetRow) {
+        targetRow.querySelector('.item-name').value = name;
+        targetRow.querySelector('.item-price').value = price;
+        calculateRowTotal(targetRow.querySelector('.item-price'));
+        checkLastRow(targetRow.querySelector('.item-name'));
+    }
 }

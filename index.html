@@ -36,9 +36,9 @@
 
         <section id="tab-pending" class="tab-content">
             <h1>Pending Items</h1>
-            <div class="pending-header">
-                <p class="instruction">Items you didn't find at the store.</p>
-                <button class="clear-link" onclick="clearAllPending()" style="font-weight:bold;">Remove All</button>
+            <div class="pending-header-row">
+                <p class="instruction">Items you didn't find.</p>
+                <button class="remove-all-btn" onclick="clearAllPending()">Remove All</button>
             </div>
             <ul id="pendingList" class="pending-ul"></ul>
             <button class="action-btn finish-btn" onclick="movePendingToList()">Move All to Next List</button>

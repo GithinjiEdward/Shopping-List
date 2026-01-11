@@ -35,7 +35,7 @@
 
         <section id="tab-pending" class="tab-content">
             <h1>Out of Stock / Missing</h1>
-            <p class="instruction">Items you planned to buy but didn't find.</p>
+            <p class="instruction">Items you didn't find at the store.</p>
             <ul id="pendingList" class="pending-ul"></ul>
             <button class="action-btn finish-btn" onclick="movePendingToList()">Move All to Next List</button>
         </section>
@@ -44,9 +44,13 @@
             <h1>Analytics</h1>
             <div class="dashboard">
                 <div class="stat-card"><h3>Spend</h3><p id="totalSpent">$0.00</p></div>
-                <div class="stat-card"><h3>Top</h3><p id="topProduct">None</p></div>
+                <div class="stat-card"><h3>Top Item</h3><p id="topProduct">None</p></div>
             </div>
             <div class="chart-container"><canvas id="spendingChart"></canvas></div>
+            <div class="history-controls">
+                <select id="monthFilter" onchange="displayHistory()"></select>
+                <button class="clear-history" onclick="clearHistory()">Reset History</button>
+            </div>
             <div id="historyDisplay"></div>
         </section>
 

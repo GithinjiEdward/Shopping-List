@@ -11,45 +11,46 @@
     <div class="app-container">
         
         <div id="tab-shopping" class="tab-content active">
-            <h1>Shopping Listd</h1>
-            <section class="date-selection">
+            <h1>Shopping List</h1>
+            
+            <section class="draft-input-section">
                 <div class="date-row">
                     <label>Shopping Date:</label>
                     <input type="date" id="shoppingDate">
                 </div>
-            </section>
-
-            <section class="table-section">
-                <table id="inputTable">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%;">Item Name</th>
-                            <th style="width: 15%;">Qty</th>
-                            <th style="width: 20%;">Price</th>
-                            <th style="width: 25%;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-                <button class="action-btn finish-btn" onclick="goToChecklist()">Finish</button>
+                <div class="input-group">
+                    <input type="text" id="quickItemName" placeholder="Add item (e.g. Milk)">
+                    <button class="add-btn" onclick="addQuickItem()">Add</button>
+                </div>
+                
+                <div class="list-header">
+                    <span>Items to Buy</span>
+                    <button class="clear-link" onclick="clearDraft()">Clear All</button>
+                </div>
+                <ul id="draftList" class="draft-ul"></ul>
+                
+                <button class="action-btn finish-btn" onclick="goToStoreTable()">Finish & Go to Store</button>
             </section>
         </div>
 
-        <div id="tab-checklist" class="tab-content">
+        <div id="tab-store" class="tab-content">
             <h1>At the Supermarket</h1>
-            <p class="instruction">Check items as you put them in your cart.</p>
-            <table class="checklist-table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Total</th>
-                        <th>Bought?</th>
-                    </tr>
-                </thead>
-                <tbody id="checklistBody"></tbody>
-            </table>
-            <button class="action-btn save-btn" onclick="finalSave()">Save Final Purchase</button>
-            <button class="link-btn" onclick="showTab('tab-shopping')">← Back to Edit List</button>
+            <section class="table-section">
+                <table id="storeTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Item</th>
+                            <th style="width: 20%;">Qty</th>
+                            <th style="width: 25%;">Price</th>
+                            <th style="width: 20%;">Check</th>
+                        </tr>
+                    </thead>
+                    <tbody id="storeTableBody"></tbody>
+                </table>
+                <div class="running-total">Total in Cart: <span id="liveTotal">$0.00</span></div>
+                <button class="action-btn save-btn" onclick="finalSave()">Save Final Purchase</button>
+                <button class="link-btn" onclick="showTab('tab-shopping')">← Back to List</button>
+            </section>
         </div>
 
         <div id="tab-history" class="tab-content">
@@ -58,21 +59,17 @@
                 <div class="stat-card"><h3>Monthly Spend</h3><p id="totalSpent">$0.00</p></div>
                 <div class="stat-card"><h3>Top Item</h3><p id="topProduct">None</p></div>
             </div>
-            <div class="chart-container">
-                <canvas id="spendingChart"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="spendingChart"></canvas></div>
             <div class="history-controls">
-                <select id="monthFilter" onchange="displayHistory()">
-                    <option value="2026-01">January 2026</option>
-                    <option value="2025-12">December 2025</option>
-                </select>
+                <select id="monthFilter" onchange="displayHistory()"></select>
+                <button class="clear-history" onclick="clearHistory()">Reset History</button>
             </div>
             <div id="historyDisplay"></div>
         </div>
 
         <nav class="bottom-nav">
-            <button onclick="showTab('tab-shopping')">🛒 List</button>
-            <button onclick="showTab('tab-checklist')">✅ Check</button>
+            <button onclick="showTab('tab-shopping')">📝 List</button>
+            <button onclick="showTab('tab-store')">🛒 Store</button>
             <button onclick="showTab('tab-history')">📊 History</button>
         </nav>
     </div>

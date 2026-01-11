@@ -1,44 +1,39 @@
 :root { --primary: #28a745; --secondary: #007bff; --dark: #333; --light: #f8f9fa; }
 body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; padding: 0; }
-
 .app-container { max-width: 500px; margin: auto; background: white; min-height: 100vh; padding: 20px; box-sizing: border-box; padding-bottom: 100px; }
 
-/* TAB SEPARATION: IMPORTANT */
+/* Tab Logic */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-h1 { text-align: center; color: var(--dark); font-size: 1.5rem; }
+h1 { text-align: center; color: var(--dark); font-size: 1.4rem; margin-bottom: 20px; }
 .date-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: bold; }
 
-/* Table Styling */
+/* Tables */
 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th { text-align: left; font-size: 11px; color: #999; text-transform: uppercase; padding: 10px 5px; border-bottom: 2px solid #eee; }
 td { padding: 10px 5px; border-bottom: 1px solid #f0f0f0; }
 
 .table-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-.table-input:focus { border-color: var(--secondary); outline: none; }
+.store-table input { width: 100%; padding: 5px; border: 1px solid #eee; }
 
 /* Buttons */
 .action-btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; color: white; cursor: pointer; margin-top: 20px; font-size: 1rem; }
 .finish-btn { background: var(--secondary); }
 .save-btn { background: var(--primary); }
-.link-btn { background: none; border: none; color: var(--secondary); width: 100%; margin-top: 15px; cursor: pointer; }
 .clear-link { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.8rem; }
 
-/* Navigation */
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; max-width: 500px; margin: auto; z-index: 100; }
-.bottom-nav button { background: none; border: none; font-weight: bold; color: #666; font-size: 13px; cursor: pointer; }
-
-/* Analytics */
-.dashboard { display: flex; gap: 10px; margin-bottom: 20px; }
-.stat-card { flex: 1; background: var(--dark); color: white; padding: 15px; border-radius: 12px; text-align: center; }
-.stat-card h3 { font-size: 10px; margin: 0; opacity: 0.7; }
-.stat-card p { font-size: 1.2rem; font-weight: bold; margin-top: 5px; }
-
+/* Pending List */
 .pending-ul { list-style: none; padding: 0; margin-top: 20px; }
-.pending-ul li { 
-    background: #fff5f5; border: 1px solid #fed7d7; 
-    padding: 15px; margin-bottom: 10px; border-radius: 10px;
-    display: flex; justify-content: space-between; color: #c53030; font-weight: 500;
-}
-.instruction { text-align: center; color: #666; font-size: 0.9rem; }
+.pending-ul li { background: #fff5f5; border: 1px solid #fed7d7; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; color: #c53030; }
+
+/* Dashboard & Nav */
+.running-total { text-align: right; padding: 20px 10px; font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+.dashboard { display: flex; gap: 10px; margin-bottom: 20px; }
+.stat-card { flex: 1; background: var(--dark); color: white; padding: 12px; border-radius: 12px; text-align: center; }
+.stat-card h3 { font-size: 10px; margin: 0; opacity: 0.7; }
+.stat-card p { font-size: 1.1rem; font-weight: bold; margin-top: 5px; }
+
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; max-width: 500px; margin: auto; }
+.bottom-nav button { background: none; border: none; font-weight: bold; color: #666; font-size: 12px; cursor: pointer; }
+input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--primary); }

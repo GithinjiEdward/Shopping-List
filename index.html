@@ -16,39 +16,28 @@
                 <label>Date:</label>
                 <input type="date" id="shoppingDate">
             </div>
-
-            <div class="list-header">
-                <span>Items to Buy</span>
-                <button class="clear-link" onclick="initializeTable()">Clear All</button>
-            </div>
-            
             <table class="draft-table">
-                <thead>
-                    <tr><th style="width: 15%;">#</th><th>Item Name</th></tr>
-                </thead>
-                <tbody id="draftTableBody">
-                    </tbody>
+                <thead><tr><th style="width: 15%;">#</th><th>Item Name</th></tr></thead>
+                <tbody id="draftTableBody"></tbody>
             </table>
-            
             <button class="action-btn finish-btn" onclick="goToStore()">Finish & Go to Store</button>
         </section>
 
         <section id="tab-store" class="tab-content">
             <h1>At the Supermarket</h1>
             <table class="store-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40%;">Item</th>
-                        <th style="width: 20%;">Qty</th>
-                        <th style="width: 20%;">Price</th>
-                        <th style="width: 20%;">Check</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Check</th></tr></thead>
                 <tbody id="storeTableBody"></tbody>
             </table>
             <div class="running-total">Total in Cart: <span id="liveTotal">$0.00</span></div>
             <button class="action-btn save-btn" onclick="finalSave()">Save Final Purchase</button>
-            <button class="link-btn" onclick="showTab('tab-shopping')">← Back to Draft</button>
+        </section>
+
+        <section id="tab-pending" class="tab-content">
+            <h1>Out of Stock / Missing</h1>
+            <p class="instruction">Items you planned to buy but didn't find.</p>
+            <ul id="pendingList" class="pending-ul"></ul>
+            <button class="action-btn finish-btn" onclick="movePendingToList()">Move All to Next List</button>
         </section>
 
         <section id="tab-history" class="tab-content">
@@ -58,16 +47,13 @@
                 <div class="stat-card"><h3>Top</h3><p id="topProduct">None</p></div>
             </div>
             <div class="chart-container"><canvas id="spendingChart"></canvas></div>
-            <div class="history-controls">
-                <select id="monthFilter" onchange="displayHistory()"></select>
-                <button class="clear-history" onclick="clearHistory()">Reset History</button>
-            </div>
             <div id="historyDisplay"></div>
         </section>
 
         <nav class="bottom-nav">
             <button onclick="showTab('tab-shopping')">📝 List</button>
             <button onclick="showTab('tab-store')">🛒 Store</button>
+            <button onclick="showTab('tab-pending')">⏳ Pending</button>
             <button onclick="showTab('tab-history')">📊 History</button>
         </nav>
     </div>

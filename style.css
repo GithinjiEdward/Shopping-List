@@ -1,39 +1,36 @@
 :root { --primary: #28a745; --secondary: #007bff; --dark: #333; --light: #f8f9fa; }
-body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; padding: 10px; }
-.app-container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; min-height: 92vh; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; padding: 0; }
 
-h1 { text-align: center; font-size: 1.4rem; color: var(--dark); }
-.date-row { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+.app-container { max-width: 500px; margin: auto; background: white; min-height: 100vh; padding: 20px; box-sizing: border-box; padding-bottom: 100px; }
 
-/* Table Styles */
-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-th { text-align: left; font-size: 11px; text-transform: uppercase; color: #999; padding: 10px 5px; border-bottom: 2px solid #eee; }
-td { padding: 8px 5px; border-bottom: 1px solid #f0f0f0; }
+/* TAB SEPARATION: IMPORTANT */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-.table-input { width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+h1 { text-align: center; color: var(--dark); font-size: 1.5rem; }
+.date-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: bold; }
+
+/* Table Styling */
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th { text-align: left; font-size: 11px; color: #999; text-transform: uppercase; padding: 10px 5px; border-bottom: 2px solid #eee; }
+td { padding: 10px 5px; border-bottom: 1px solid #f0f0f0; }
+
+.table-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
 .table-input:focus { border-color: var(--secondary); outline: none; }
 
-/* Dynamic Row numbering */
-.row-num { color: #ccc; font-weight: bold; font-size: 12px; }
-
-/* Status Styles */
-.running-total { text-align: right; padding: 10px; font-size: 1.2rem; font-weight: bold; color: var(--primary); }
-input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); }
-
-/* Navigation & Tabs */
-.tab-content { display: none; padding-bottom: 70px; }
-.tab-content.active { display: block; }
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; max-width: 500px; margin: auto; }
-.bottom-nav button { background: none; border: none; font-weight: bold; color: #777; font-size: 12px; cursor: pointer; }
-
-/* Action Buttons */
-.action-btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; }
+/* Buttons */
+.action-btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; color: white; cursor: pointer; margin-top: 20px; font-size: 1rem; }
 .finish-btn { background: var(--secondary); }
 .save-btn { background: var(--primary); }
-.clear-link { background: none; border: none; color: #ff4d4d; font-size: 12px; cursor: pointer; }
+.link-btn { background: none; border: none; color: var(--secondary); width: 100%; margin-top: 15px; cursor: pointer; }
+.clear-link { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.8rem; }
 
-/* Dashboard */
-.dashboard { display: flex; gap: 10px; margin-bottom: 15px; }
-.stat-card { flex: 1; background: var(--dark); color: white; padding: 12px; border-radius: 12px; text-align: center; }
-.stat-card h3 { font-size: 9px; margin: 0; text-transform: uppercase; opacity: 0.7; }
-.stat-card p { font-size: 1.1rem; font-weight: bold; margin: 5px 0 0 0; }
+/* Navigation */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; max-width: 500px; margin: auto; z-index: 100; }
+.bottom-nav button { background: none; border: none; font-weight: bold; color: #666; font-size: 13px; cursor: pointer; }
+
+/* Analytics */
+.dashboard { display: flex; gap: 10px; margin-bottom: 20px; }
+.stat-card { flex: 1; background: var(--dark); color: white; padding: 15px; border-radius: 12px; text-align: center; }
+.stat-card h3 { font-size: 10px; margin: 0; opacity: 0.7; }
+.stat-card p { font-size: 1.2rem; font-weight: bold; margin-top: 5px; }

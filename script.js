@@ -1,11 +1,10 @@
 let shoppingHistory = JSON.parse(localStorage.getItem('shoppingHistory')) || [];
-let draftItems = JSON.parse(localStorage.getItem('draftItems')) || [];
 let myChart = null;
 
 window.onload = function() {
     document.getElementById('shoppingDate').value = new Date().toISOString().split('T')[0];
+    initializeTable();
     setupMonthFilter();
-    renderDraftList();
     displayHistory();
 };
 
@@ -15,54 +14,58 @@ function showTab(tabId) {
     if(tabId === 'tab-history') displayHistory();
 }
 
-// --- DRAFT LIST ---
-function addQuickItem() {
-    const input = document.getElementById('quickItemName');
-    if (input.value.trim() === "") return;
-    draftItems.push(input.value.trim());
-    localStorage.setItem('draftItems', JSON.stringify(draftItems));
-    input.value = "";
-    renderDraftList();
+// --- DRAFTING TABLE (Auto-add rows) ---
+function initializeTable() {
+    const tbody = document.getElementById('draftTableBody');
+    tbody.innerHTML = '';
+    for (let i = 0; i < 3; i++) { addDraftRow(); }
 }
 
-function renderDraftList() {
-    const ul = document.getElementById('draftList');
-    ul.innerHTML = draftItems.map((item, index) => `
-        <li>${item} <button class="delete-btn" onclick="removeDraft(${index})">&times;</button></li>
-    `).join('');
+function addDraftRow() {
+    const tbody = document.getElementById('draftTableBody');
+    const rowCount = tbody.rows.length + 1;
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td class="row-num">${rowCount}</td>
+        <td><input type="text" class="table-input draft-name" placeholder="Enter item..." oninput="handleRowInput(this)"></td>
+    `;
+    tbody.appendChild(row);
 }
 
-function removeDraft(index) {
-    draftItems.splice(index, 1);
-    localStorage.setItem('draftItems', JSON.stringify(draftItems));
-    renderDraftList();
-}
-
-function clearDraft() {
-    if(confirm("Clear your entire list?")) {
-        draftItems = [];
-        localStorage.removeItem('draftItems');
-        renderDraftList();
+function handleRowInput(input) {
+    const rows = document.querySelectorAll('#draftTableBody tr');
+    const lastRow = rows[rows.length - 1];
+    const secondToLast = rows[rows.length - 2];
+    
+    // Add row if the last row starts getting filled
+    if (input.closest('tr') === lastRow && input.value !== '') {
+        addDraftRow();
     }
 }
 
-// --- IN-STORE TABLE ---
-function goToStoreTable() {
-    if (draftItems.length === 0) return alert("Your list is empty!");
+// --- TRANSITION TO STORE ---
+function goToStore() {
+    const names = Array.from(document.querySelectorAll('.draft-name'))
+                       .map(i => i.value.trim())
+                       .filter(v => v !== '');
+
+    if (names.length === 0) return alert("Your list is empty!");
+
     const tbody = document.getElementById('storeTableBody');
-    tbody.innerHTML = draftItems.map((item, index) => `
+    tbody.innerHTML = names.map(name => `
         <tr>
-            <td style="font-size:14px; overflow:hidden;">${item}</td>
-            <td><input type="number" class="store-qty" value="1" oninput="updateLiveTotal()"></td>
-            <td><input type="number" class="store-price" placeholder="0.00" oninput="updateLiveTotal()"></td>
-            <td style="text-align:center;"><input type="checkbox" class="store-check" onchange="updateLiveTotal()"></td>
+            <td style="font-size:14px;">${name}</td>
+            <td><input type="number" class="store-qty" value="1" oninput="calculateLiveTotal()"></td>
+            <td><input type="number" class="store-price" placeholder="0.00" oninput="calculateLiveTotal()"></td>
+            <td style="text-align:center;"><input type="checkbox" class="store-check" onchange="calculateLiveTotal()"></td>
         </tr>
     `).join('');
-    updateLiveTotal();
+
+    calculateLiveTotal();
     showTab('tab-store');
 }
 
-function updateLiveTotal() {
+function calculateLiveTotal() {
     let total = 0;
     document.querySelectorAll('#storeTableBody tr').forEach(row => {
         const qty = row.querySelector('.store-qty').value || 0;
@@ -74,53 +77,64 @@ function updateLiveTotal() {
     document.getElementById('liveTotal').innerText = `$${total.toFixed(2)}`;
 }
 
-// --- DATA SAVING ---
+// --- FINAL SAVE ---
 function finalSave() {
     const rows = document.querySelectorAll('#storeTableBody tr');
-    const finalItems = [];
+    const items = [];
     let grandTotal = 0;
 
-    rows.forEach((row, index) => {
+    rows.forEach(row => {
         if (row.querySelector('.store-check').checked) {
+            const name = row.cells[0].innerText;
             const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
             const price = parseFloat(row.querySelector('.store-price').value) || 0;
-            finalItems.push({ name: draftItems[index], qty, price, total: qty * price });
-            grandTotal += qty * price;
+            items.push({ name, qty, price, total: qty * price });
+            grandTotal += (qty * price);
         }
     });
 
-    if (finalItems.length === 0) return alert("No items checked!");
+    if (items.length === 0) return alert("Nothing checked as purchased!");
 
-    shoppingHistory.push({ date: document.getElementById('shoppingDate').value, items: finalItems, total: grandTotal });
+    shoppingHistory.push({
+        date: document.getElementById('shoppingDate').value,
+        items: items,
+        total: grandTotal
+    });
+
     localStorage.setItem('shoppingHistory', JSON.stringify(shoppingHistory));
-    
-    // Auto-clear list after saving
-    draftItems = [];
-    localStorage.removeItem('draftItems');
-    renderDraftList();
+    alert("Saved to History!");
+    initializeTable();
     showTab('tab-history');
 }
 
-// --- ANALYTICS ---
+// --- ANALYTICS & HISTORY ---
 function setupMonthFilter() {
     const filter = document.getElementById('monthFilter');
-    const months = ["2026-01", "2025-12", "2025-11", "2025-10"];
-    filter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+    const now = new Date();
+    let options = "";
+    for(let i=0; i<4; i++) {
+        let d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        let m = d.toISOString().substring(0, 7);
+        options += `<option value="${m}">${m}</option>`;
+    }
+    filter.innerHTML = options;
 }
 
 function displayHistory() {
     const filter = document.getElementById('monthFilter').value;
     const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
+    
     updateDashboard(filtered);
+    
     const display = document.getElementById('historyDisplay');
     display.innerHTML = filtered.map(t => `
-        <div class="history-item">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
+        <div class="history-item" style="border-bottom:1px solid #eee; padding:10px 0;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
                 <span>${t.date}</span><span>$${t.total.toFixed(2)}</span>
             </div>
-            <p style="font-size:11px; color:#777; margin:5px 0 0 0;">${t.items.map(i => i.name).join(', ')}</p>
+            <p style="font-size:11px; color:#888; margin:5px 0;">${t.items.map(i => i.name).join(', ')}</p>
         </div>
-    `).join('') || "<p style='text-align:center; padding:20px; color:#999;'>No history found.</p>";
+    `).join('') || "<p style='text-align:center; color:#999;'>No history.</p>";
 }
 
 function updateDashboard(trips) {
@@ -137,17 +151,20 @@ function updateDashboard(trips) {
     const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
     document.getElementById('topProduct').innerText = top;
 
-    if (myChart) myChart.destroy();
     const ctx = document.getElementById('spendingChart').getContext('2d');
+    if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: Object.keys(daily).sort(), datasets: [{ label: 'Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] },
+        data: { 
+            labels: Object.keys(daily).sort(), 
+            datasets: [{ label: 'Daily Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] 
+        },
         options: { responsive: true, plugins: { legend: { display: false } } }
     });
 }
 
 function clearHistory() {
-    if(confirm("This will permanently delete ALL shopping history. Continue?")) {
+    if(confirm("Delete all history?")) {
         shoppingHistory = [];
         localStorage.removeItem('shoppingHistory');
         displayHistory();

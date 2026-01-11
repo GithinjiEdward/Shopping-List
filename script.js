@@ -16,7 +16,14 @@ function showTab(tabId) {
     if(tabId === 'tab-pending') renderPendingList();
 }
 
-// --- DRAFTING LOGIC ---
+function showHistorySub(type) {
+    document.getElementById('sub-history-graph').style.display = type === 'graph' ? 'block' : 'none';
+    document.getElementById('sub-history-logs').style.display = type === 'logs' ? 'block' : 'none';
+    document.getElementById('btn-graph').classList.toggle('active', type === 'graph');
+    document.getElementById('btn-logs').classList.toggle('active', type === 'logs');
+}
+
+// --- DRAFTING ---
 function initializeTable() {
     const tbody = document.getElementById('draftTableBody');
     tbody.innerHTML = '';
@@ -26,10 +33,7 @@ function initializeTable() {
 function addDraftRow() {
     const tbody = document.getElementById('draftTableBody');
     const row = document.createElement('tr');
-    row.innerHTML = `
-        <td style="color:#ccc; font-weight:bold;">${tbody.rows.length + 1}</td>
-        <td><input type="text" class="table-input draft-name" placeholder="Item name..." oninput="handleRowInput(this)"></td>
-    `;
+    row.innerHTML = `<td>${tbody.rows.length + 1}</td><td><input type="text" class="table-input draft-name" oninput="handleRowInput(this)"></td>`;
     tbody.appendChild(row);
 }
 
@@ -38,22 +42,18 @@ function handleRowInput(input) {
     if (input.closest('tr') === rows[rows.length - 1] && input.value !== '') addDraftRow();
 }
 
-// --- STORE TRANSITION ---
+// --- STORE ---
 function goToStore() {
-    const names = Array.from(document.querySelectorAll('.draft-name'))
-                       .map(i => i.value.trim()).filter(v => v !== '');
-    if (names.length === 0) return alert("Please add items to your list first.");
-
+    const names = Array.from(document.querySelectorAll('.draft-name')).map(i => i.value.trim()).filter(v => v !== '');
+    if (names.length === 0) return alert("List is empty!");
     const storeBody = document.getElementById('storeTableBody');
     storeBody.innerHTML = names.map(name => `
         <tr>
-            <td style="font-weight:600;">${name}</td>
+            <td>${name}</td>
             <td><input type="number" class="store-qty" value="1" oninput="calculateLiveTotal()"></td>
             <td><input type="number" class="store-price" placeholder="0.00" oninput="calculateLiveTotal()"></td>
-            <td style="text-align:center;"><input type="checkbox" class="store-check" onchange="calculateLiveTotal()"></td>
-        </tr>
-    `).join('');
-    calculateLiveTotal();
+            <td><input type="checkbox" class="store-check" onchange="calculateLiveTotal()"></td>
+        </tr>`).join('');
     showTab('tab-store');
 }
 
@@ -61,15 +61,13 @@ function calculateLiveTotal() {
     let total = 0;
     document.querySelectorAll('#storeTableBody tr').forEach(row => {
         if (row.querySelector('.store-check').checked) {
-            const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.store-price').value) || 0;
-            total += (qty * price);
+            total += (parseFloat(row.querySelector('.store-qty').value) || 0) * (parseFloat(row.querySelector('.store-price').value) || 0);
         }
     });
     document.getElementById('liveTotal').innerText = `$${total.toFixed(2)}`;
 }
 
-// --- SPLIT SAVE LOGIC ---
+// --- SAVE LOGIC ---
 function finalSave() {
     const rows = document.querySelectorAll('#storeTableBody tr');
     const boughtItems = [];
@@ -78,8 +76,7 @@ function finalSave() {
 
     rows.forEach(row => {
         const name = row.cells[0].innerText;
-        const isChecked = row.querySelector('.store-check').checked;
-        if (isChecked) {
+        if (row.querySelector('.store-check').checked) {
             const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
             const price = parseFloat(row.querySelector('.store-price').value) || 0;
             boughtItems.push({ name, qty, price, total: qty * price });
@@ -99,21 +96,19 @@ function finalSave() {
         localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
     }
 
-    alert("Purchase Saved! Checked items moved to History. Unchecked moved to Pending.");
+    // Auto-clear Store tab and Draft list
+    document.getElementById('storeTableBody').innerHTML = '';
     initializeTable();
+    alert("Saved! Check Pending tab for items you didn't buy.");
     showTab('tab-pending');
 }
 
-// --- PENDING LOGIC ---
+// --- PENDING & HISTORY ---
 function renderPendingList() {
     const container = document.getElementById('pendingList');
-    if (pendingItems.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:#999;'>All items found! List is clear.</p>";
-        return;
-    }
-    container.innerHTML = pendingItems.map((item, index) => `
-        <li><span>${item}</span><button class="clear-link" onclick="removePending(${index})">Delete</button></li>
-    `).join('');
+    container.innerHTML = pendingItems.length ? pendingItems.map((item, index) => `
+        <li><span>${item}</span><button class="clear-link" onclick="removePending(${index})">Remove</button></li>`).join('') 
+        : "<p style='text-align:center; color:#999;'>List clear!</p>";
 }
 
 function removePending(index) {
@@ -126,47 +121,33 @@ function movePendingToList() {
     showTab('tab-shopping');
     initializeTable();
     const inputs = document.querySelectorAll('.draft-name');
-    pendingItems.forEach((item, index) => {
-        if (index < inputs.length) {
-            inputs[index].value = item;
-            if (index === inputs.length - 1) addDraftRow();
-        }
-    });
+    pendingItems.forEach((item, index) => { if (index < inputs.length) { inputs[index].value = item; if (index === inputs.length - 1) addDraftRow(); } });
     pendingItems = [];
     localStorage.removeItem('pendingItems');
 }
 
-// --- ANALYTICS ---
-function setupMonthFilter() {
-    const filter = document.getElementById('monthFilter');
-    const months = ["2026-01", "2025-12", "2025-11", "2025-10"];
-    filter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-}
-
 function displayHistory() {
-    const filterValue = document.getElementById('monthFilter').value;
-    const filtered = shoppingHistory.filter(t => t.date.startsWith(filterValue));
+    const filter = document.getElementById('monthFilter').value;
+    const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
     updateDashboard(filtered);
-    const container = document.getElementById('historyDisplay');
-    container.innerHTML = filtered.map(t => `
-        <div style="border:1px solid #eee; padding:12px; border-radius:10px; margin-top:10px;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${t.date}</span><span>$${t.total.toFixed(2)}</span></div>
-            <p style="font-size:11px; color:#777; margin:5px 0 0 0;">${t.items.map(i => i.name).join(', ')}</p>
-        </div>`).join('') || "<p style='text-align:center; color:#999;'>No history.</p>";
+    
+    const container = document.getElementById('historyTableContainer');
+    if (!filtered.length) return container.innerHTML = "<p style='text-align:center;'>No logs.</p>";
+
+    container.innerHTML = filtered.reverse().map(trip => `
+        <div class="log-date-header">${trip.date} (Total: $${trip.total.toFixed(2)})</div>
+        <table class="log-table">
+            <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Sum</th></tr></thead>
+            <tbody>${trip.items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>$${i.price.toFixed(2)}</td><td>$${i.total.toFixed(2)}</td></tr>`).join('')}</tbody>
+        </table>`).join('');
 }
 
 function updateDashboard(trips) {
     let total = trips.reduce((s, t) => s + t.total, 0);
     document.getElementById('totalSpent').innerText = `$${total.toFixed(2)}`;
     const daily = {};
-    const counts = {};
-    trips.forEach(t => {
-        daily[t.date] = (daily[t.date] || 0) + t.total;
-        t.items.forEach(i => counts[i.name] = (counts[i.name] || 0) + 1);
-    });
-    const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
-    document.getElementById('topProduct').innerText = top;
-
+    trips.forEach(t => daily[t.date] = (daily[t.date] || 0) + t.total);
+    
     const ctx = document.getElementById('spendingChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
@@ -175,4 +156,10 @@ function updateDashboard(trips) {
     });
 }
 
-function clearHistory() { if(confirm("Clear all history?")) { shoppingHistory = []; localStorage.removeItem('shoppingHistory'); displayHistory(); } }
+function setupMonthFilter() {
+    const filter = document.getElementById('monthFilter');
+    const months = ["2026-01", "2025-12", "2025-11", "2025-10"];
+    filter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+function clearHistory() { if(confirm("Clear history?")) { shoppingHistory = []; localStorage.removeItem('shoppingHistory'); displayHistory(); } }

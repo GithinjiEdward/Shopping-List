@@ -31,27 +31,39 @@
             </table>
             <div class="running-total">Total in Cart: <span id="liveTotal">$0.00</span></div>
             <button class="action-btn save-btn" onclick="finalSave()">Save Final Purchase</button>
+            <button class="link-btn" onclick="showTab('tab-shopping')">← Back to List</button>
         </section>
 
         <section id="tab-pending" class="tab-content">
-            <h1>Out of Stock / Missing</h1>
+            <h1>Pending Items</h1>
             <p class="instruction">Items you didn't find at the store.</p>
             <ul id="pendingList" class="pending-ul"></ul>
             <button class="action-btn finish-btn" onclick="movePendingToList()">Move All to Next List</button>
         </section>
 
         <section id="tab-history" class="tab-content">
-            <h1>Analytics</h1>
-            <div class="dashboard">
-                <div class="stat-card"><h3>Spend</h3><p id="totalSpent">$0.00</p></div>
-                <div class="stat-card"><h3>Top Item</h3><p id="topProduct">None</p></div>
+            <h1>History & Insights</h1>
+            
+            <div class="sub-nav">
+                <button id="btn-graph" class="sub-btn active" onclick="showHistorySub('graph')">Insights</button>
+                <button id="btn-logs" class="sub-btn" onclick="showHistorySub('logs')">Purchase Logs</button>
             </div>
-            <div class="chart-container"><canvas id="spendingChart"></canvas></div>
-            <div class="history-controls">
-                <select id="monthFilter" onchange="displayHistory()"></select>
-                <button class="clear-history" onclick="clearHistory()">Reset History</button>
+
+            <div id="sub-history-graph">
+                <div class="dashboard">
+                    <div class="stat-card"><h3>Spend</h3><p id="totalSpent">$0.00</p></div>
+                    <div class="stat-card"><h3>Top Item</h3><p id="topProduct">None</p></div>
+                </div>
+                <div class="chart-container"><canvas id="spendingChart"></canvas></div>
             </div>
-            <div id="historyDisplay"></div>
+
+            <div id="sub-history-logs" style="display:none;">
+                <div class="history-controls">
+                    <select id="monthFilter" onchange="displayHistory()"></select>
+                    <button class="clear-history" onclick="clearHistory()">Reset All</button>
+                </div>
+                <div id="historyTableContainer"></div>
+            </div>
         </section>
 
         <nav class="bottom-nav">

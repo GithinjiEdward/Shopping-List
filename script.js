@@ -67,7 +67,7 @@ function calculateLiveTotal() {
     document.getElementById('liveTotal').innerText = `$${total.toFixed(2)}`;
 }
 
-// --- SAVE LOGIC ---
+// --- SAVE & SPLIT ---
 function finalSave() {
     const rows = document.querySelectorAll('#storeTableBody tr');
     const boughtItems = [];
@@ -96,19 +96,18 @@ function finalSave() {
         localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
     }
 
-    // Auto-clear Store tab and Draft list
     document.getElementById('storeTableBody').innerHTML = '';
     initializeTable();
-    alert("Saved! Check Pending tab for items you didn't buy.");
+    alert("Saved! Check Pending for missing items.");
     showTab('tab-pending');
 }
 
-// --- PENDING & HISTORY ---
+// --- PENDING LOGIC (WITH CLEAR ALL) ---
 function renderPendingList() {
     const container = document.getElementById('pendingList');
     container.innerHTML = pendingItems.length ? pendingItems.map((item, index) => `
         <li><span>${item}</span><button class="clear-link" onclick="removePending(${index})">Remove</button></li>`).join('') 
-        : "<p style='text-align:center; color:#999;'>List clear!</p>";
+        : "<p style='text-align:center; color:#999;'>No pending items.</p>";
 }
 
 function removePending(index) {
@@ -117,22 +116,37 @@ function removePending(index) {
     renderPendingList();
 }
 
+function clearAllPending() {
+    if (pendingItems.length === 0) return;
+    if (confirm("Remove all items from the pending list?")) {
+        pendingItems = [];
+        localStorage.removeItem('pendingItems');
+        renderPendingList();
+    }
+}
+
 function movePendingToList() {
+    if (pendingItems.length === 0) return alert("Nothing to move!");
     showTab('tab-shopping');
     initializeTable();
     const inputs = document.querySelectorAll('.draft-name');
-    pendingItems.forEach((item, index) => { if (index < inputs.length) { inputs[index].value = item; if (index === inputs.length - 1) addDraftRow(); } });
+    pendingItems.forEach((item, index) => { 
+        if (index < inputs.length) { 
+            inputs[index].value = item; 
+            if (index === inputs.length - 1) addDraftRow(); 
+        } 
+    });
     pendingItems = [];
     localStorage.removeItem('pendingItems');
 }
 
+// --- HISTORY & ANALYTICS ---
 function displayHistory() {
     const filter = document.getElementById('monthFilter').value;
     const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
     updateDashboard(filtered);
-    
     const container = document.getElementById('historyTableContainer');
-    if (!filtered.length) return container.innerHTML = "<p style='text-align:center;'>No logs.</p>";
+    if (!filtered.length) return container.innerHTML = "<p style='text-align:center; padding:20px;'>No logs.</p>";
 
     container.innerHTML = filtered.reverse().map(trip => `
         <div class="log-date-header">${trip.date} (Total: $${trip.total.toFixed(2)})</div>
@@ -146,8 +160,14 @@ function updateDashboard(trips) {
     let total = trips.reduce((s, t) => s + t.total, 0);
     document.getElementById('totalSpent').innerText = `$${total.toFixed(2)}`;
     const daily = {};
-    trips.forEach(t => daily[t.date] = (daily[t.date] || 0) + t.total);
-    
+    const counts = {};
+    trips.forEach(t => {
+        daily[t.date] = (daily[t.date] || 0) + t.total;
+        t.items.forEach(i => counts[i.name] = (counts[i.name] || 0) + 1);
+    });
+    const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
+    document.getElementById('topProduct').innerText = top;
+
     const ctx = document.getElementById('spendingChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {

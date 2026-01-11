@@ -1,24 +1,35 @@
 let shoppingHistory = JSON.parse(localStorage.getItem('shoppingHistory')) || [];
 let myChart = null;
 
+// Initialize when page loads
 window.onload = function() {
     document.getElementById('shoppingDate').value = new Date().toISOString().split('T')[0];
-    initializeTable();
+    initializeTable(); // Ensures the input table is built
     setupMonthFilter();
     displayHistory();
 };
 
+// --- NAVIGATION LOGIC ---
 function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    // Hide all tabs
+    const tabs = document.getElementsByClassName('tab-content');
+    for (let i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+    }
+    // Show selected tab
     document.getElementById(tabId).classList.add('active');
+    
     if(tabId === 'tab-history') displayHistory();
 }
 
-// --- DRAFTING TABLE (Auto-add rows) ---
+// --- DRAFTING TABLE LOGIC ---
 function initializeTable() {
     const tbody = document.getElementById('draftTableBody');
     tbody.innerHTML = '';
-    for (let i = 0; i < 3; i++) { addDraftRow(); }
+    // Start with 3 blank rows
+    for (let i = 0; i < 3; i++) {
+        addDraftRow();
+    }
 }
 
 function addDraftRow() {
@@ -26,8 +37,8 @@ function addDraftRow() {
     const rowCount = tbody.rows.length + 1;
     const row = document.createElement('tr');
     row.innerHTML = `
-        <td class="row-num">${rowCount}</td>
-        <td><input type="text" class="table-input draft-name" placeholder="Enter item..." oninput="handleRowInput(this)"></td>
+        <td style="color:#ccc; font-weight:bold;">${rowCount}</td>
+        <td><input type="text" class="table-input draft-name" placeholder="Type item here..." oninput="handleRowInput(this)"></td>
     `;
     tbody.appendChild(row);
 }
@@ -35,43 +46,52 @@ function addDraftRow() {
 function handleRowInput(input) {
     const rows = document.querySelectorAll('#draftTableBody tr');
     const lastRow = rows[rows.length - 1];
-    const secondToLast = rows[rows.length - 2];
-    
-    // Add row if the last row starts getting filled
+    // If user types in the last row, add a new one automatically
     if (input.closest('tr') === lastRow && input.value !== '') {
         addDraftRow();
     }
 }
 
-// --- TRANSITION TO STORE ---
+// --- TRANSITION TO STORE (PHASE 2) ---
 function goToStore() {
-    const names = Array.from(document.querySelectorAll('.draft-name'))
-                       .map(i => i.value.trim())
-                       .filter(v => v !== '');
+    const inputs = document.querySelectorAll('.draft-name');
+    const names = [];
+    inputs.forEach(input => {
+        if (input.value.trim() !== "") names.push(input.value.trim());
+    });
 
-    if (names.length === 0) return alert("Your list is empty!");
+    if (names.length === 0) {
+        alert("Please enter at least one item in the list.");
+        return;
+    }
 
-    const tbody = document.getElementById('storeTableBody');
-    tbody.innerHTML = names.map(name => `
-        <tr>
-            <td style="font-size:14px;">${name}</td>
-            <td><input type="number" class="store-qty" value="1" oninput="calculateLiveTotal()"></td>
-            <td><input type="number" class="store-price" placeholder="0.00" oninput="calculateLiveTotal()"></td>
+    const storeBody = document.getElementById('storeTableBody');
+    storeBody.innerHTML = ''; // Clear previous
+
+    names.forEach(name => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="font-weight:600;">${name}</td>
+            <td><input type="number" class="store-qty" value="1" min="1" oninput="calculateLiveTotal()"></td>
+            <td><input type="number" class="store-price" placeholder="0.00" step="0.01" oninput="calculateLiveTotal()"></td>
             <td style="text-align:center;"><input type="checkbox" class="store-check" onchange="calculateLiveTotal()"></td>
-        </tr>
-    `).join('');
+        `;
+        storeBody.appendChild(row);
+    });
 
     calculateLiveTotal();
-    showTab('tab-store');
+    showTab('tab-store'); // Switch page
 }
 
 function calculateLiveTotal() {
     let total = 0;
-    document.querySelectorAll('#storeTableBody tr').forEach(row => {
-        const qty = row.querySelector('.store-qty').value || 0;
-        const price = row.querySelector('.store-price').value || 0;
-        if (row.querySelector('.store-check').checked) {
-            total += (parseFloat(qty) * parseFloat(price));
+    const rows = document.querySelectorAll('#storeTableBody tr');
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.store-price').value) || 0;
+        const isChecked = row.querySelector('.store-check').checked;
+        if (isChecked) {
+            total += (qty * price);
         }
     });
     document.getElementById('liveTotal').innerText = `$${total.toFixed(2)}`;
@@ -80,86 +100,83 @@ function calculateLiveTotal() {
 // --- FINAL SAVE ---
 function finalSave() {
     const rows = document.querySelectorAll('#storeTableBody tr');
-    const items = [];
+    const purchasedItems = [];
     let grandTotal = 0;
 
     rows.forEach(row => {
-        if (row.querySelector('.store-check').checked) {
+        const isChecked = row.querySelector('.store-check').checked;
+        if (isChecked) {
             const name = row.cells[0].innerText;
             const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
             const price = parseFloat(row.querySelector('.store-price').value) || 0;
-            items.push({ name, qty, price, total: qty * price });
+            purchasedItems.push({ name, qty, price, total: qty * price });
             grandTotal += (qty * price);
         }
     });
 
-    if (items.length === 0) return alert("Nothing checked as purchased!");
+    if (purchasedItems.length === 0) {
+        alert("Please check at least one item that you bought.");
+        return;
+    }
 
-    shoppingHistory.push({
+    const tripData = {
         date: document.getElementById('shoppingDate').value,
-        items: items,
+        items: purchasedItems,
         total: grandTotal
-    });
+    };
 
+    shoppingHistory.push(tripData);
     localStorage.setItem('shoppingHistory', JSON.stringify(shoppingHistory));
-    alert("Saved to History!");
-    initializeTable();
-    showTab('tab-history');
+    
+    alert("Shopping Trip Saved!");
+    initializeTable(); // Reset first page
+    showTab('tab-history'); // Go to analytics
 }
 
-// --- ANALYTICS & HISTORY ---
+// --- ANALYTICS LOGIC ---
 function setupMonthFilter() {
     const filter = document.getElementById('monthFilter');
-    const now = new Date();
-    let options = "";
-    for(let i=0; i<4; i++) {
-        let d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        let m = d.toISOString().substring(0, 7);
-        options += `<option value="${m}">${m}</option>`;
-    }
-    filter.innerHTML = options;
+    const months = ["2026-01", "2025-12", "2025-11", "2025-10"];
+    filter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
 function displayHistory() {
-    const filter = document.getElementById('monthFilter').value;
-    const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
+    const filterValue = document.getElementById('monthFilter').value;
+    const filtered = shoppingHistory.filter(item => item.date.startsWith(filterValue));
     
     updateDashboard(filtered);
     
-    const display = document.getElementById('historyDisplay');
-    display.innerHTML = filtered.map(t => `
-        <div class="history-item" style="border-bottom:1px solid #eee; padding:10px 0;">
+    const container = document.getElementById('historyDisplay');
+    if (filtered.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#999;'>No history for this month.</p>";
+        return;
+    }
+
+    container.innerHTML = filtered.map(trip => `
+        <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:10px; margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                <span>${t.date}</span><span>$${t.total.toFixed(2)}</span>
+                <span>${trip.date}</span><span>$${trip.total.toFixed(2)}</span>
             </div>
-            <p style="font-size:11px; color:#888; margin:5px 0;">${t.items.map(i => i.name).join(', ')}</p>
+            <p style="font-size:11px; color:#777; margin:5px 0 0 0;">${trip.items.map(i => i.name).join(', ')}</p>
         </div>
-    `).join('') || "<p style='text-align:center; color:#999;'>No history.</p>";
+    `).join('');
 }
 
 function updateDashboard(trips) {
-    let total = trips.reduce((s, t) => s + t.total, 0);
+    let total = trips.reduce((sum, t) => sum + t.total, 0);
     document.getElementById('totalSpent').innerText = `$${total.toFixed(2)}`;
     
-    const counts = {};
-    const daily = {};
-    trips.forEach(t => {
-        daily[t.date] = (daily[t.date] || 0) + t.total;
-        t.items.forEach(i => counts[i.name] = (counts[i.name] || 0) + 1);
-    });
+    const dailyData = {};
+    trips.forEach(t => dailyData[t.date] = (dailyData[t.date] || 0) + t.total);
     
-    const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
-    document.getElementById('topProduct').innerText = top;
-
     const ctx = document.getElementById('spendingChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'bar',
-        data: { 
-            labels: Object.keys(daily).sort(), 
-            datasets: [{ label: 'Daily Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] 
-        },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        data: {
+            labels: Object.keys(dailyData).sort(),
+            datasets: [{ label: 'Spend', data: Object.keys(dailyData).sort().map(d => dailyData[d]), backgroundColor: '#28a745' }]
+        }
     });
 }
 

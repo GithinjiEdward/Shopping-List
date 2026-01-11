@@ -36,19 +36,20 @@
 
         <section id="tab-pending" class="tab-content">
             <h1>Pending Items</h1>
-            <p class="instruction">Items you didn't find at the store.</p>
+            <div class="pending-header">
+                <p class="instruction">Items you didn't find at the store.</p>
+                <button class="clear-link" onclick="clearAllPending()" style="font-weight:bold;">Remove All</button>
+            </div>
             <ul id="pendingList" class="pending-ul"></ul>
             <button class="action-btn finish-btn" onclick="movePendingToList()">Move All to Next List</button>
         </section>
 
         <section id="tab-history" class="tab-content">
             <h1>History & Insights</h1>
-            
             <div class="sub-nav">
                 <button id="btn-graph" class="sub-btn active" onclick="showHistorySub('graph')">Insights</button>
                 <button id="btn-logs" class="sub-btn" onclick="showHistorySub('logs')">Purchase Logs</button>
             </div>
-
             <div id="sub-history-graph">
                 <div class="dashboard">
                     <div class="stat-card"><h3>Spend</h3><p id="totalSpent">$0.00</p></div>
@@ -56,7 +57,6 @@
                 </div>
                 <div class="chart-container"><canvas id="spendingChart"></canvas></div>
             </div>
-
             <div id="sub-history-logs" style="display:none;">
                 <div class="history-controls">
                     <select id="monthFilter" onchange="displayHistory()"></select>

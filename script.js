@@ -27,14 +27,13 @@ function showHistorySub(type) {
 function initializeTable() {
     const tbody = document.getElementById('draftTableBody');
     tbody.innerHTML = '';
-    for (let i = 0; i < 3; i++) addDraftRow();
+    for (let i = 0; i < 4; i++) addDraftRow();
 }
 
 function addDraftRow() {
     const tbody = document.getElementById('draftTableBody');
-    const rowCount = tbody.rows.length + 1;
     const row = document.createElement('tr');
-    row.innerHTML = `<td>${rowCount}</td><td><input type="text" class="table-input draft-name" placeholder="Item name..." oninput="handleRowInput(this)"></td>`;
+    row.innerHTML = `<td>${tbody.rows.length + 1}</td><td><input type="text" class="table-input draft-name" placeholder="Item..." oninput="handleRowInput(this)"></td>`;
     tbody.appendChild(row);
 }
 
@@ -46,13 +45,13 @@ function handleRowInput(input) {
 // --- STORE ---
 function goToStore() {
     const names = Array.from(document.querySelectorAll('.draft-name')).map(i => i.value.trim()).filter(v => v !== '');
-    if (names.length === 0) return alert("Your list is empty!");
+    if (names.length === 0) return alert("Please list some items first.");
     const storeBody = document.getElementById('storeTableBody');
     storeBody.innerHTML = names.map(name => `
         <tr>
             <td>${name}</td>
-            <td><input type="number" class="store-qty" value="1" min="1" oninput="calculateLiveTotal()"></td>
-            <td><input type="number" class="store-price" placeholder="0.00" step="0.01" oninput="calculateLiveTotal()"></td>
+            <td><input type="number" class="store-qty" value="1" min="1" style="width:40px"></td>
+            <td><input type="number" class="store-price" placeholder="0.00" step="0.01" oninput="calculateLiveTotal()" style="width:60px"></td>
             <td style="text-align:center;"><input type="checkbox" class="store-check" onchange="calculateLiveTotal()"></td>
         </tr>`).join('');
     calculateLiveTotal();
@@ -63,20 +62,19 @@ function calculateLiveTotal() {
     let total = 0;
     document.querySelectorAll('#storeTableBody tr').forEach(row => {
         if (row.querySelector('.store-check').checked) {
-            const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.store-price').value) || 0;
-            total += (qty * price);
+            total += (parseFloat(row.querySelector('.store-qty').value) || 0) * (parseFloat(row.querySelector('.store-price').value) || 0);
         }
     });
     document.getElementById('liveTotal').innerText = `$${total.toFixed(2)}`;
 }
 
-// --- SAVE ---
+// --- FINAL SAVE (History + Pending) ---
 function finalSave() {
     const rows = document.querySelectorAll('#storeTableBody tr');
     const bought = [];
     const missed = [];
-    let total = 0;
+    let spent = 0;
+    const budget = parseFloat(document.getElementById('budgetInput').value) || 0;
 
     rows.forEach(row => {
         const name = row.cells[0].innerText;
@@ -84,50 +82,51 @@ function finalSave() {
             const qty = parseFloat(row.querySelector('.store-qty').value) || 0;
             const price = parseFloat(row.querySelector('.store-price').value) || 0;
             bought.push({ name, qty, price, total: qty * price });
-            total += (qty * price);
+            spent += (qty * price);
         } else {
             missed.push(name);
         }
     });
 
-    if (bought.length > 0) {
-        shoppingHistory.push({ date: document.getElementById('shoppingDate').value, items: bought, total: total });
-        localStorage.setItem('shoppingHistory', JSON.stringify(shoppingHistory));
-    }
+    // Save to history
+    shoppingHistory.push({
+        date: document.getElementById('shoppingDate').value,
+        items: bought,
+        totalSpent: spent,
+        budget: budget
+    });
+    localStorage.setItem('shoppingHistory', JSON.stringify(shoppingHistory));
+
+    // Handle skipped items
     if (missed.length > 0) {
         pendingItems = [...new Set([...pendingItems, ...missed])];
         localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
     }
 
+    // Reset UI
+    document.getElementById('budgetInput').value = '';
     document.getElementById('storeTableBody').innerHTML = '';
     initializeTable();
-    alert("Saved successfully!");
+    alert("Purchase Saved!");
     showTab('tab-pending');
 }
 
-// --- PENDING LOGIC ---
+// --- PENDING LIST ---
 function renderPendingList() {
     const container = document.getElementById('pendingList');
-    if (pendingItems.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:#999; margin-top:20px;'>No pending items.</p>";
-        return;
-    }
+    if (!pendingItems.length) return container.innerHTML = "<p style='text-align:center; color:#999;'>No pending items.</p>";
     container.innerHTML = pendingItems.map((item, index) => `
-        <li>
-            <span>${item}</span>
-            <button class="delete-item" onclick="removePending(${index})">&times;</button>
-        </li>`).join('');
+        <li><span>${item}</span><button class="remove-all-btn" onclick="removeOnePending(${index})">X</button></li>`).join('');
 }
 
-function removePending(index) {
+function removeOnePending(index) {
     pendingItems.splice(index, 1);
     localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
     renderPendingList();
 }
 
 function clearAllPending() {
-    if (pendingItems.length === 0) return;
-    if (confirm("Permanently remove all items from this list?")) {
+    if (confirm("Remove all items from Pending?")) {
         pendingItems = [];
         localStorage.removeItem('pendingItems');
         renderPendingList();
@@ -135,7 +134,7 @@ function clearAllPending() {
 }
 
 function movePendingToList() {
-    if (pendingItems.length === 0) return alert("Nothing to move!");
+    if (!pendingItems.length) return;
     showTab('tab-shopping');
     initializeTable();
     const inputs = document.querySelectorAll('.draft-name');
@@ -149,39 +148,53 @@ function movePendingToList() {
     localStorage.removeItem('pendingItems');
 }
 
-// --- HISTORY ---
+// --- HISTORY DASHBOARD ---
 function displayHistory() {
     const filter = document.getElementById('monthFilter').value;
     const filtered = shoppingHistory.filter(t => t.date.startsWith(filter));
-    updateDashboard(filtered);
-    const container = document.getElementById('historyTableContainer');
-    if (!filtered.length) return container.innerHTML = "<p style='text-align:center; padding:20px;'>No logs found.</p>";
+    
+    let totalSpent = filtered.reduce((s, t) => s + (t.totalSpent || 0), 0);
+    let totalBudget = filtered.reduce((s, t) => s + (t.budget || 0), 0);
+    let diff = totalBudget - totalSpent;
 
+    document.getElementById('totalSpent').innerText = `$${totalSpent.toFixed(2)}`;
+    document.getElementById('totalBudget').innerText = `$${totalBudget.toFixed(2)}`;
+    
+    const diffEl = document.getElementById('budgetDiff');
+    if (diff < 0) {
+        diffEl.innerText = `($${Math.abs(diff).toFixed(2)})`;
+        diffEl.className = "diff-over";
+    } else {
+        diffEl.innerText = `$${diff.toFixed(2)} ✓`;
+        diffEl.className = "diff-under";
+    }
+
+    updateChart(filtered);
+
+    // Purchase Logs Table
+    const container = document.getElementById('historyTableContainer');
+    if (!filtered.length) return container.innerHTML = "<p style='text-align:center; padding:20px;'>No history.</p>";
     container.innerHTML = filtered.reverse().map(trip => `
-        <div class="log-date-header">${trip.date} - Total: $${trip.total.toFixed(2)}</div>
+        <div class="log-date-header">${trip.date} | Budget: $${(trip.budget || 0).toFixed(2)}</div>
         <table class="log-table">
             <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
             <tbody>${trip.items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>$${i.price.toFixed(2)}</td><td>$${i.total.toFixed(2)}</td></tr>`).join('')}</tbody>
         </table>`).join('');
 }
 
-function updateDashboard(trips) {
-    let total = trips.reduce((s, t) => s + t.total, 0);
-    document.getElementById('totalSpent').innerText = `$${total.toFixed(2)}`;
-    const daily = {};
-    const counts = {};
-    trips.forEach(t => {
-        daily[t.date] = (daily[t.date] || 0) + t.total;
-        t.items.forEach(i => counts[i.name] = (counts[i.name] || 0) + 1);
-    });
-    const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "None");
-    document.getElementById('topProduct').innerText = top;
-
+function updateChart(trips) {
     const ctx = document.getElementById('spendingChart').getContext('2d');
+    const daily = {};
+    trips.forEach(t => daily[t.date] = (daily[t.date] || 0) + (t.totalSpent || 0));
+    
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: Object.keys(daily).sort(), datasets: [{ label: 'Daily Spend', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }] }
+        data: {
+            labels: Object.keys(daily).sort(),
+            datasets: [{ label: 'Spent per Day', data: Object.keys(daily).sort().map(d => daily[d]), backgroundColor: '#28a745' }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
     });
 }
 
@@ -191,4 +204,4 @@ function setupMonthFilter() {
     filter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
-function clearHistory() { if(confirm("Clear history?")) { shoppingHistory = []; localStorage.removeItem('shoppingHistory'); displayHistory(); } }
+function clearHistory() { if(confirm("Delete all purchase history?")) { shoppingHistory = []; localStorage.removeItem('shoppingHistory'); displayHistory(); } }
